@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const conn = require('../db/db');
+const conn = require('../src/shared/db/db');
 
 
 const Pagamento = conn.define("Pagamento", {

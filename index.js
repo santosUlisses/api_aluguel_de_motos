@@ -1,11 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const conn = require('./db/db');
-const Aluguel = require('./models/Aluguel')
-const Moto = require('./models/Moto')
-const Pagamentos = require('./models/Pagamentos')
-const User = require('./models/User')
+const conn = require('./src/shared/db/db');
 const relacionamento = require('./models/relacionamento')
 
 
@@ -15,7 +11,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
 
-const router = require('./routers/router');
+const router = require('./src/routers/router');
 app.use('/', router);
 
 

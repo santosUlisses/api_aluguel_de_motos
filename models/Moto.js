@@ -1,26 +1,31 @@
 const { DataTypes, ENUM } = require('sequelize');
 
 
-const conn = require('../db/db');
+const conn = require('../src/shared/db/db');
 
 const Moto = conn.define("Moto", {
     nome: {
         type: DataTypes.STRING,
-        required: true,
+        allowNull: false,
     },
     marca: {
         type: DataTypes.STRING,
-        required: true,
+        allowNull: false,
     },
     cor: {
         type: DataTypes.STRING,
-        required: true,
+        allowNull: false,
     }
     ,
     disponibilidade: {
         type: DataTypes.ENUM("disponivel", "alugada"),
         defaultValue: "disponivel",
-    }
+    },
+    placa: {
+        type: DataTypes.STRING,
+        unique: true,
+        allowNull: false,
+    },
 });
 
 

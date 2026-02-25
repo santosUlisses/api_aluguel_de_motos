@@ -1,6 +1,6 @@
 const { DataTypes, ENUM } = require('sequelize');
 
-const conn = require('../db/db');
+const conn = require('../src/shared/db/db');
 
 
 const Aluguel = conn.define("Aluguel", {

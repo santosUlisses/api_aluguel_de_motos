@@ -1,8 +1,15 @@
+const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 
 
 
-class enviarEmail {
+class Service {
+    async criarSenha(senha) {
+        const salt = await bcrypt.genSalt(10);
+        const senhaHash = await bcrypt.hash(senha, salt);
+        return senhaHash;
+    }
+
     async enviarEmail(email) {
         const transporter = nodemailer.createTransport({
             service: "gmail",
@@ -32,6 +39,7 @@ class enviarEmail {
 
         }
     }
+
 }
 
-module.exports = new enviarEmail();
+module.exports = new Service();

@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 
-const conn = require('../db/db');
+const conn = require('../src/shared/db/db');
 
 const User = conn.define("User", {
     nome: {
