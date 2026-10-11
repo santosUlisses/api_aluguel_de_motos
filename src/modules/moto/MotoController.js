@@ -1,23 +1,43 @@
+const MotoImagensService = require('../imagem/ImagensService');
 const MotoService = require('./MotoService');
 
 class MotoController {
-    async listarMotos(req, res) {
+    async criarMoto(req, res) {
+        const { nome, marca, cor, placa, descricao } = req.body;
         try {
-            const motos = await MotoService.listarMotos();
-            return res.status(200).json({ motos });
+            await MotoService.criarMoto(nome, marca, cor, placa, descricao);
+            return res.status(201).json({ "message": "moto criada com sucesso" });
         } catch (error) {
-            console.log(error);
+            return res.status(error.statusCode || 500).json({ "message": error.message });
+        }
+    }
+    async listarMotos(req, res) {
+        const { filtro, page } = req.query;
+        try {
+
+            const motos = await MotoService.listarMotos({ page, filtro });
+            return res.status(200).json(motos);
+        } catch (error) {
+            return res.status(error.statusCode || 500).json({ "message": error.message });
+        }
+    }
+    async buscarMotoId(req, res) {
+        const { id } = req.params;
+        try {
+            const moto = await MotoService.buscarMotoId(id);
+            return res.status(200).json(moto);
+        } catch (error) {
             return res.status(error.statusCode || 500).json({ "message": error.message });
         }
     }
 
-    async criarMoto(req, res) {
-        const { nome, marca, cor, placa } = req.body;
+    async editarMoto(req, res) {
+        const { id } = req.params;
+        const { nome, marca, cor, disponibilidade, placa, descricao } = req.body;
         try {
-            await MotoService.criar_moto(nome, marca, cor, placa);
-            return res.status(201).json({ "message": "moto criada com sucesso" });
+            await MotoService.editarMoto(id, nome, marca, cor, disponibilidade, placa, descricao);
+            return res.status(200).json({ "message": "Moto atualizada!" });
         } catch (error) {
-            console.log(error);
             return res.status(error.statusCode || 500).json({ "message": error.message });
         }
     }

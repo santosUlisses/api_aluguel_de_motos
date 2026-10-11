@@ -5,26 +5,35 @@ class AluguelController {
 
     async criarAluguel(req, res) {
         const { data_inicio, data_vencimento, valor_aluguel, UserId, MotoId } = req.body;
-        if (!data_inicio || !data_vencimento || !valor_aluguel || !UserId || !MotoId) {
-            return res.status(400).json({ "message": "algum dado obrigatório não foi fornecido" });
-        }
         try {
-            await AluguelService.criar_aluguel(data_inicio, data_vencimento, valor_aluguel, UserId, MotoId);
+            await AluguelService.criarAluguel(data_inicio, data_vencimento, valor_aluguel, UserId, MotoId);
             return res.status(201).json({ "message": "aluguel criado" });
         } catch (error) {
-            console.log(error);
             return res.status(error.statusCode || 500).json({ "message": error.message });
         }
     }
-    async buscarAluguel(req, res) {
+    async buscarAluguelId(req, res) {
         const { id } = req.params;
         try {
-            const aluguel = await AluguelService.buscarAluguel(id);
-            res.status(200).json({ aluguel });
+            const aluguel = await AluguelService.buscarAluguelId(id);
+
+            return res.status(200).json(aluguel);
         } catch (error) {
-            res.status(error.statusCode || 500).json({ "message": error.message });
+            return res.status(error.statusCode || 500).json({ "message": error.message });
         }
     }
+
+    async alugueisUsuario(req, res) {
+        const id = req.params.id;
+        const page = req.query.page;
+        try {
+            const alugueis = await AluguelService.alugueisUsuario(id, page);
+            return res.status(200).json(alugueis);
+        } catch (error) {
+            return res.status(error.statusCode || 500).json({ "message": error.message || "erro inesperado" });
+        }
+    }
+
     async editarAluguel(req, res) {
         const { id } = req.params;
         const { data_vencimento, valor_aluguel, status } = req.body;
@@ -37,11 +46,22 @@ class AluguelController {
     }
 
     async alugueis(req, res) {
+        const { status, page } = req.query;
         try {
-            const alugueis = await AluguelService.alugueis();
-            return res.status(200).json({ alugueis });
+            const alugueis = await AluguelService.alugueis({ status, page });
+            return res.status(200).json(alugueis);
         } catch (error) {
-            return res.status(error.statusCode || 500).json({ message: error.message });
+            return res.status(error.statusCode || 500).json({ message: error.message || "Erro no servidor" });
+        }
+    }
+
+    async apagarAluguel(req, res) {
+        const { id } = req.params;
+        try {
+            await AluguelService.apagarAluguel(id);
+            res.status(200).json({ "message": "Aluguel apagado com sucesso" });
+        } catch (error) {
+            return res.status(error.statusCode || 500).json({ "message": error.message });
         }
     }
 

@@ -1,12 +1,18 @@
 const UserRepository = require('./UserRepository');
 const AppError = require('../../shared/errors/AppError')
-const authToken = require('../../../middleware/Token');
+const authToken = require('../../middleware/Autenticar');
 const bcrypt = require('bcrypt');
 const Service = require('../../shared/services/Service')
+const validator = require('validator');
+const textUtils = require('../../utils/textUtils');
 
 
 class UserService {
     async criar_usuario(nome, email, senha) {
+        if (!validator.isEmail(email)) {
+            throw new AppError("Email inválido", 400);
+        }
+        nome = textUtils.capitalizarPalavras(nome);
         const usuario = await UserRepository.buscarEmail(email);
         if (usuario) {
             throw new AppError('Conta já cadastrada', 409);
@@ -16,41 +22,104 @@ class UserService {
         await UserRepository.criar({ nome, email, senha: senhaHash });
         Service.enviarEmail(email);
     }
-    async usuarios() {
-        const usuarios = (await UserRepository.listar()).map(m => m.get({ plain: true })).map(usuarioF => {
-            return {
-                id: usuarioF.id,
-                nome: usuarioF.nome,
-                email: usuarioF.email,
-            }
-        });
-        if (!usuarios) {
-            throw new AppError("Nenhum usuário encontrado", 404);
+
+    async usuarios(page) {
+        page = Math.max(Number(page) || 1, 1);
+        const limit = 10;
+        const offset = (page - 1) * limit;
+        const usuarios = await UserRepository.listar(limit, offset);
+        if (usuarios.length <= 0) {
+            return { "message": "Nenhum usuário cadastrado" }
         }
-        return usuarios;
+
+        return {
+            total: usuarios.count,
+            currentPage: page,
+            totalPages: Math.ceil(usuarios.count / limit),
+            usuarios: usuarios.rows.map((u) => {
+                return {
+                    id: u.id,
+                    nome: u.nome,
+                    email: u.email,
+                }
+            })
+        }
+
+    }
+
+    async buscarPorFiltro({ filtro, page }) {
+        page = Math.max(Number(page) || 1, 1);
+        const limit = 10;
+        const offset = (page - 1) * limit
+        const usuarios = await UserRepository.buscarPorFiltro({ filtro, limit, offset });
+        return {
+            total: usuarios.count,
+            currentPage: page,
+            totalPages: Math.ceil(usuarios.count / limit),
+            usuarios: usuarios.rows.map((u) => {
+                return {
+                    id: u.id,
+                    nome: u.nome,
+                    email: u.email,
+                }
+            })
+        };
     }
 
     async login(email, senha) {
+        if (!email || !senha) {
+            throw new AppError("Email e senha são obrigatórios", 400)
+        }
+        if (!validator.isEmail(email)) {
+            throw new AppError("Email inválido", 400);
+        }
         const usuario = await UserRepository.buscarEmail(email);
-        if (usuario) {
-            const auth = await bcrypt.compare(senha, usuario.senha);
-            if (auth) {
-                const token = authToken.gerarToken(usuario.id);
-                return { usuario, token };
-            }
+        if (!usuario) {
+            throw new AppError("Email ou senha inválidos", 401)
+        }
+        const autenticacao = await bcrypt.compare(senha, usuario.senha);
+        if (!autenticacao) {
             throw new AppError("Senha inválida", 401);
         }
-        throw new AppError("Email inválido", 404);
+        const token = authToken.gerarToken(usuario);
+
+        return {
+            usuario: {
+                id: usuario.id,
+                email: usuario.email,
+                nome: usuario.nome,
+                tipo_usuario: usuario.tipo_usuario,
+            }, token
+        };
     }
 
-    async editar_dados(id, nome, email, senha) {
+    async buscarUsuario(id) {
+        const existe = await UserRepository.buscarUsuarioId(id);
+        if (!existe) {
+            throw new AppError("Usuário não encontrado", 404);
+        }
+        const usuario = {
+            id: existe.id,
+            nome: existe.nome,
+            email: existe.email,
+        }
+        return usuario;
+    }
+
+    async editar_dados({ id, nome, email, senha }) {
         const usuario = await UserRepository.buscarUsuarioId(id);
-        const senhaHash = await Service.criarSenha(senha)
+        const senhaHash = await Service.criarSenha(senha);
+        if (!id || !nome || !email || !senha) {
+            throw new AppError("Algum dado necessário não foi fornecido", 400);
+        }
+        if (!validator.isEmail(email)) {
+            throw AppError("Email inválido", 400)
+        }
         if (!usuario) {
             throw new AppError("Usuário não encontrado", 404);
         }
         if (email !== usuario.email) {
-            const emailExiste = await UserRepository.buscarEmail(email);
+            const emailExiste = !! await UserRepository.buscarEmail(email);
             if (emailExiste) {
                 throw new AppError("Email já cadastrado", 409)
             }
@@ -58,8 +127,8 @@ class UserService {
         await UserRepository.editarDados({ id, nome, email, senha: senhaHash });
     }
 
-    async buscarDadosId(id) {
-        const usuario = await UserRepository.buscarDadosId(id);
+    async buscarAlugueis(id) {
+        const usuario = await UserRepository.buscarAlugueis(id);
         const dados = {
             id: usuario.id,
             nome: usuario.nome,
@@ -81,10 +150,13 @@ class UserService {
 
         }
         if (!usuario) {
-            throw new AppError("Dados não encontrados", 404);
+            return { "message": "usuário não encontrado" }
         }
         return dados;
     }
+
+
+
 }
 
 module.exports = new UserService();

@@ -1,6 +1,10 @@
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
-
+const sharp = require("sharp");
+const fsSync = require("fs/promises");
+const fs = require('fs')
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
 
 
 class Service {
@@ -32,12 +36,39 @@ class Service {
                 console.log("email enviado com sucesso");
             });
 
-
         } catch (error) {
             console.log(`falha ao enviar : ${error}`);
-
-
         }
+    }
+
+
+    async processarImagem(imagem) {
+        const novoNome = `moto-${uuidv4()}.webp`;
+        const uploadPath = path.resolve("uploads");
+
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        const caminhoSaida = path.resolve("uploads", novoNome);
+
+
+        const buffer = await sharp(imagem.path).resize(1200, 800, {
+            fit: "cover"
+        }).webp({ quality: 80 }).toBuffer();
+
+        fsSync.writeFile(caminhoSaida, buffer);
+
+        await new Promise(resolve =>
+            setTimeout(resolve, 300)
+        );
+        try {
+            await fsSync.unlink(imagem.path);
+        } catch (error) {
+            console.warn("Erro ao remover arquivo temporário.", error.message);
+        }
+
+
+        return `/uploads/${novoNome}`;
     }
 
 }
